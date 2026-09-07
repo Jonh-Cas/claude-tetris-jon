@@ -1,0 +1,83 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    # Si el issue menciona @claude, lo atiende claude.yml. No duplicar trabajo.
+    if: "!contains(github.event.issue.body, '@claude') && !contains(github.event.issue.title, '@claude')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Triage issue con Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*)"'
+          prompt: |
+            Eres el triador de issues del repositorio ${{ github.repository }}, un Tetris en JavaScript vanilla
+            (`index.html`, `style.css`, `game.js`, sin build ni dependencias).
+
+            Trabaja sobre el issue número ${{ github.event.issue.number }}.
+
+            Antes de escribir nada, investiga:
+
+            1. Lee el issue: `gh issue view ${{ github.event.issue.number }} --json title,body,labels`
+            2. Lee `CLAUDE.md` del repositorio para entender la arquitectura y usar la terminología correcta
+               (`lockPiece`, `merge`, `clearLines`, `spawn`, `tryRotate`, `ghostY`, `updateHUD`, `togglePause`, `loop`).
+            3. Explora el código relevante (`game.js`, `index.html`, `style.css`) y localiza las líneas concretas
+               implicadas. El diagnóstico debe citar código real, no ser genérico.
+
+            Después realiza exactamente dos acciones:
+
+            **A. Asignar labels.**
+            Lista los labels disponibles con `gh label list`. Elige entre 1 y 3 que encajen y aplícalos con
+            `gh issue edit ${{ github.event.issue.number }} --add-label "label1,label2"`.
+            Usa únicamente labels que ya existan: no crees labels nuevos. Si ninguno encaja, no apliques ninguno.
+            No quites labels que ya estén puestos.
+
+            **B. Publicar un diagnóstico** con
+            `gh issue comment ${{ github.event.issue.number }} --body "..."`, con esta estructura exacta:
+
+            ## Diagnóstico automático
+
+            **Resumen** — el problema en una o dos frases.
+
+            **Tipo** — bug / mejora / duda / documentación.
+
+            **Componente** — archivos y líneas afectadas en formato `game.js:123`.
+
+            **Causa probable** — hipótesis técnica citando el código real que has leído.
+
+            **Criterios de aceptación** — lista verificable de cuándo se considera resuelto.
+
+            **Plan de solución sugerido** — pasos concretos de implementación, con las funciones a tocar.
+
+            **Riesgos y acoplamientos** — puntos de acoplamiento del proyecto que la solución podría romper. Revisa
+            si aplica alguno: el tamaño del canvas está duplicado entre las constantes `COLS`/`ROWS`/`BLOCK` de
+            `game.js` y los atributos `width`/`height` del `<canvas>` en `index.html` (nada lo verifica); los índices
+            `1`–`7` son a la vez tipo de pieza, índice en `COLORS` y valor almacenado en cada celda de `PIECES`, así
+            que cambiar uno obliga a cambiar los tres; `togglePause` debe resetear `lastTime` antes de reanudar el
+            `requestAnimationFrame` o el primer frame recibe un `dt` enorme; `updateHUD()` solo se llama desde
+            `clearLines`, `softDrop`, `init` y el final del manejador de `keydown`.
+
+            Escribe todo el diagnóstico en español. Los identificadores, rutas, comandos y nombres de función van en
+            inglés y sin traducir.
+
+            Restricciones: no modifiques código, no crees ramas ni pull requests, no cierres el issue.
+            Tu única salida son los labels y el comentario.
