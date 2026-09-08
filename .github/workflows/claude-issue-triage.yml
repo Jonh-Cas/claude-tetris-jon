@@ -51,8 +51,26 @@ jobs:
             Usa únicamente labels que ya existan: no crees labels nuevos. Si ninguno encaja, no apliques ninguno.
             No quites labels que ya estén puestos.
 
-            **B. Publicar un diagnóstico** con
-            `gh issue comment ${{ github.event.issue.number }} --body "..."`, con esta estructura exacta:
+            **B. Publicar un diagnóstico** como comentario del issue.
+
+            El comentario debe estar escrito en Markdown válido de GitHub (GFM), de forma que GitHub lo renderice
+            correctamente: encabezados con `##`, negritas con `**...**`, listas con `-`, listas numeradas con `1.`,
+            código en línea entre backticks y bloques de código con triple backtick indicando el lenguaje. Deja una
+            línea en blanco entre cada bloque (encabezado, párrafo, lista): sin ella GitHub no separa los elementos.
+            No escribas HTML ni texto plano sin marcado.
+
+            Publícalo con un heredoc para conservar los saltos de línea reales:
+
+            ```bash
+            gh issue comment ${{ github.event.issue.number }} --body-file - <<'EOF'
+            ...markdown...
+            EOF
+            ```
+
+            No uses `--body "..."`: al ir en una sola línea pierde los saltos y obliga a escapar comillas, y sin
+            saltos reales GitHub no renderiza encabezados ni listas.
+
+            Estructura exacta del comentario:
 
             ## Diagnóstico automático
 
@@ -64,9 +82,10 @@ jobs:
 
             **Causa probable** — hipótesis técnica citando el código real que has leído.
 
-            **Criterios de aceptación** — lista verificable de cuándo se considera resuelto.
+            **Criterios de aceptación** — lista de checkboxes `- [ ]` verificable de cuándo se considera resuelto.
 
-            **Plan de solución sugerido** — pasos concretos de implementación, con las funciones a tocar.
+            **Plan de solución sugerido** — lista numerada con los pasos concretos de implementación y las funciones
+            a tocar.
 
             **Riesgos y acoplamientos** — puntos de acoplamiento del proyecto que la solución podría romper. Revisa
             si aplica alguno: el tamaño del canvas está duplicado entre las constantes `COLS`/`ROWS`/`BLOCK` de
