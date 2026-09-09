@@ -223,7 +223,7 @@ kbd {
   border-radius: 4px;
 }
 
-.overlay.hidden {
+.hidden {
   display: none;
 }
 
@@ -233,6 +233,7 @@ kbd {
   flex-direction: column;
   gap: 12px;
   align-items: center;
+  min-width: 200px;
 }
 
 #overlay-title {
@@ -248,8 +249,21 @@ kbd {
   color: var(--value-color);
 }
 
-#restart-btn {
-  margin-top: 8px;
+.overlay-heading {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--title-color);
+}
+
+.overlay-sub {
+  font-size: 13px;
+  color: var(--controls-color);
+}
+
+.menu-btn {
+  width: 100%;
+  margin-top: 4px;
   background: var(--restart-bg);
   color: var(--restart-color);
   border: none;
@@ -262,6 +276,55 @@ kbd {
   transition: background 0.15s;
 }
 
-#restart-btn:hover {
+.menu-btn:hover {
   background: var(--restart-hover);
+}
+
+.menu-btn-secondary {
+  background: var(--kbd-bg);
+  color: var(--fg);
+  border: 1px solid var(--kbd-border);
+}
+
+.menu-btn-secondary:hover {
+  background: var(--board-border);
+}
+
+.level-select-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin-top: 8px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--label-color);
+}
+
+.level-select-row select {
+  background: var(--kbd-bg);
+  color: var(--fg);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.overlay-controls-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.overlay-controls-list li {
+  font-size: 13px;
+  color: var(--controls-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
