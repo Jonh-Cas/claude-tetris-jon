@@ -10,54 +10,117 @@
   <div class="wrapper">
     <div class="topbar">
       <h1 class="game-title">TETRIS</h1>
-      <div class="theme-toggle">
-        <span class="theme-label">CLARO</span>
-        <label class="switch">
-          <input type="checkbox" id="theme-switch" aria-label="Alternar modo claro/oscuro" />
-          <span class="slider"></span>
-        </label>
+      <div class="topbar-options">
+        <div class="skin-picker">
+          <span class="theme-label">SKIN</span>
+          <select id="skin-select" aria-label="Elegir skin visual">
+            <option value="retro">Retro</option>
+            <option value="neon">Neon</option>
+            <option value="pastel">Pastel</option>
+            <option value="pixel">Pixel art</option>
+          </select>
+        </div>
+        <div class="theme-toggle">
+          <span class="theme-label">CLARO</span>
+          <label class="switch">
+            <input type="checkbox" id="theme-switch" aria-label="Alternar modo claro/oscuro" />
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
     </div>
-    <div class="game-container">
-      <canvas id="board" width="300" height="600"></canvas>
+    <div class="stage">
+      <div class="game-container">
+        <canvas id="board" width="300" height="600"></canvas>
 
-      <aside class="panel">
-        <div class="panel-section">
-          <span class="label">SCORE</span>
-          <span class="value" id="score">0</span>
-        </div>
-        <div class="panel-section">
-          <span class="label">LINES</span>
-          <span class="value" id="lines">0</span>
-        </div>
-        <div class="panel-section">
-          <span class="label">LEVEL</span>
-          <span class="value" id="level">1</span>
+        <aside class="panel">
+          <div class="panel-section">
+            <span class="label">SCORE</span>
+            <span class="value" id="score">0</span>
+          </div>
+          <div class="panel-section">
+            <span class="label">LINES</span>
+            <span class="value" id="lines">0</span>
+          </div>
+          <div class="panel-section">
+            <span class="label">LEVEL</span>
+            <span class="value" id="level">1</span>
+          </div>
+          <div class="panel-section hidden" id="combo-section">
+            <span class="label">COMBO</span>
+            <span class="value" id="combo">0</span>
+          </div>
+
+          <div class="panel-section">
+            <span class="label">NEXT</span>
+            <canvas id="next-canvas" width="120" height="120"></canvas>
+          </div>
+
+          <div class="panel-section controls">
+            <span class="label">CONTROLS</span>
+            <ul>
+              <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+              <li><kbd>↑</kbd> rotar</li>
+              <li><kbd>↓</kbd> bajar</li>
+              <li><kbd>Space</kbd> caída</li>
+              <li><kbd>P</kbd> pausa</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+
+      <div id="overlay" class="overlay hidden">
+        <!-- Pantalla de inicio -->
+        <div class="overlay-box" id="panel-start">
+          <p class="overlay-title">TETRIS</p>
+          <div class="records-block" id="start-records"></div>
+          <label class="field">
+            <span class="field-label">NIVEL INICIAL</span>
+            <select id="start-level" aria-label="Nivel inicial"></select>
+          </label>
+          <button class="btn btn-primary" id="play-btn">JUGAR</button>
+          <button class="btn btn-ghost" id="reset-records-btn">Resetear records</button>
         </div>
 
-        <div class="panel-section">
-          <span class="label">NEXT</span>
-          <canvas id="next-canvas" width="120" height="120"></canvas>
+        <!-- Menú de pausa -->
+        <div class="overlay-box hidden" id="panel-pause">
+          <p class="overlay-title">PAUSA</p>
+          <button class="btn btn-primary" id="resume-btn">Reanudar</button>
+          <button class="btn" id="restart-btn">Reiniciar</button>
+          <button class="btn" id="controls-btn">Ver controles</button>
+          <label class="field">
+            <span class="field-label">NIVEL INICIAL</span>
+            <select id="pause-level" aria-label="Nivel inicial de la próxima partida"></select>
+          </label>
+          <p class="hint">Se aplica a la próxima partida.</p>
         </div>
 
-        <div class="panel-section controls">
-          <span class="label">CONTROLS</span>
-          <ul>
-            <li><kbd>←</kbd><kbd>→</kbd> mover</li>
-            <li><kbd>↑</kbd> rotar</li>
-            <li><kbd>↓</kbd> bajar</li>
-            <li><kbd>Space</kbd> caída</li>
-            <li><kbd>P</kbd> pausa</li>
+        <!-- Lista de controles -->
+        <div class="overlay-box hidden" id="panel-controls">
+          <p class="overlay-title">CONTROLES</p>
+          <ul class="key-list">
+            <li><kbd>←</kbd><kbd>→</kbd><span>Mover pieza</span></li>
+            <li><kbd>↑</kbd><kbd>X</kbd><span>Rotar</span></li>
+            <li><kbd>↓</kbd><span>Bajar una fila</span></li>
+            <li><kbd>Space</kbd><span>Caída instantánea</span></li>
+            <li><kbd>P</kbd><kbd>Esc</kbd><span>Pausa / menú</span></li>
           </ul>
+          <button class="btn btn-primary" id="back-btn">Volver</button>
         </div>
-      </aside>
-    </div>
 
-    <div id="overlay" class="overlay hidden">
-      <div class="overlay-box">
-        <p id="overlay-title">GAME OVER</p>
-        <p id="overlay-score"></p>
-        <button id="restart-btn">Reiniciar</button>
+        <!-- Fin de partida -->
+        <div class="overlay-box hidden" id="panel-gameover">
+          <p class="overlay-title danger">GAME OVER</p>
+          <p id="overlay-score"></p>
+          <div class="new-record hidden" id="new-record-msg">¡Entras en el top!</div>
+          <div class="save-row hidden" id="save-row">
+            <input type="text" id="player-name" maxlength="12" placeholder="Tu nombre" aria-label="Nombre del jugador" />
+            <button class="btn btn-primary" id="save-record-btn">Guardar</button>
+          </div>
+          <div class="records-block" id="gameover-records"></div>
+          <button class="btn" id="gameover-restart-btn">Jugar otra vez</button>
+          <button class="btn btn-ghost" id="gameover-home-btn">Inicio</button>
+        </div>
       </div>
     </div>
   </div>
