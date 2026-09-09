@@ -42,11 +42,30 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeSwitch = document.getElementById('theme-switch');
+const skinSelect = document.getElementById('skin-select');
 
 const THEME_KEY = 'tetris-theme';
+const SKIN_KEY = 'tetris-skin';
 const themeColors = { gridLine: '#22222e', highlight: 'rgba(255,255,255,0.12)' };
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let currentSkin = 'retro';
+
+function storageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    // localStorage bloqueado o lleno: ignorar, el juego sigue funcionando
+  }
+}
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -162,16 +181,122 @@ function updateHUD() {
   levelEl.textContent = level;
 }
 
-function drawBlock(context, x, y, colorIndex, size, alpha) {
-  if (!colorIndex) return;
+// Paletas de skins: 9 posiciones, null en el índice 0 (vacío). El índice
+// sigue siendo a la vez tipo de pieza, índice de color y valor de celda.
+const NEON_COLORS = [
+  null,
+  '#00fff9', // I
+  '#faff00', // O
+  '#ff00f7', // T
+  '#00ff6a', // S
+  '#ff0044', // Z
+  '#3d9bff', // J
+  '#ff9500', // L
+  '#e0e0ff', // N
+];
+
+const PASTEL_COLORS = [
+  null,
+  '#a8e6e6', // I
+  '#fff2b2', // O
+  '#dcb8e8', // T
+  '#b8e6c2', // S
+  '#f2b8b8', // Z
+  '#b8d4f2', // J
+  '#f2d0a8', // L
+  '#d8d8e0', // N
+];
+
+const PIXEL_COLORS = COLORS;
+
+function drawBlockRetro(context, x, y, colorIndex, size, alpha) {
   const color = COLORS[colorIndex];
   context.globalAlpha = alpha ?? 1;
   context.fillStyle = color;
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
   context.fillStyle = themeColors.highlight;
   context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
+}
+
+function drawBlockNeon(context, x, y, colorIndex, size, alpha) {
+  const color = NEON_COLORS[colorIndex];
+  context.globalAlpha = alpha ?? 1;
+  context.shadowColor = color;
+  context.shadowBlur = size * 0.6;
+  context.fillStyle = color;
+  context.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
+  // el glow no debe filtrarse a la cuadrícula ni al canvas NEXT
+  context.shadowBlur = 0;
+  context.strokeStyle = themeColors.highlight;
+  context.lineWidth = 1;
+  context.strokeRect(x * size + 2, y * size + 2, size - 4, size - 4);
+}
+
+function roundedRectPath(context, px, py, s, r) {
+  if (typeof context.roundRect === 'function') {
+    context.beginPath();
+    context.roundRect(px, py, s, s, r);
+    return;
+  }
+  // fallback manual para navegadores sin CanvasRenderingContext2D.roundRect
+  context.beginPath();
+  context.moveTo(px + r, py);
+  context.arcTo(px + s, py, px + s, py + s, r);
+  context.arcTo(px + s, py + s, px, py + s, r);
+  context.arcTo(px, py + s, px, py, r);
+  context.arcTo(px, py, px + s, py, r);
+  context.closePath();
+}
+
+function drawBlockPastel(context, x, y, colorIndex, size, alpha) {
+  const color = PASTEL_COLORS[colorIndex];
+  const px = x * size + 1;
+  const py = y * size + 1;
+  const s = size - 2;
+  const r = Math.min(6, s / 4);
+  context.globalAlpha = alpha ?? 1;
+  context.fillStyle = color;
+  roundedRectPath(context, px, py, s, r);
+  context.fill();
+  context.globalAlpha = (alpha ?? 1) * 0.6;
+  context.fillStyle = themeColors.highlight;
+  context.fillRect(px + 2, py + 2, s - 4, 3);
+}
+
+function drawBlockPixel(context, x, y, colorIndex, size, alpha) {
+  const color = PIXEL_COLORS[colorIndex];
+  const px = x * size + 1;
+  const py = y * size + 1;
+  const s = size - 2;
+  context.globalAlpha = alpha ?? 1;
+  context.fillStyle = color;
+  context.fillRect(px, py, s, s);
+  // textura tipo pixel-art: cuadrícula interna clara/oscura alterna
+  const cell = Math.max(3, Math.floor(s / 4));
+  for (let ry = 0; ry < s; ry += cell) {
+    for (let rx = 0; rx < s; rx += cell) {
+      const dark = ((rx / cell + ry / cell) % 2) === 0;
+      context.fillStyle = dark ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
+      context.fillRect(px + rx, py + ry, Math.min(cell, s - rx), Math.min(cell, s - ry));
+    }
+  }
+  context.strokeStyle = 'rgba(0,0,0,0.35)';
+  context.lineWidth = 1;
+  context.strokeRect(px + 0.5, py + 0.5, s - 1, s - 1);
+}
+
+const SKINS = {
+  retro: { colors: COLORS, draw: drawBlockRetro },
+  neon: { colors: NEON_COLORS, draw: drawBlockNeon },
+  pastel: { colors: PASTEL_COLORS, draw: drawBlockPastel },
+  pixel: { colors: PIXEL_COLORS, draw: drawBlockPixel },
+};
+
+function drawBlock(context, x, y, colorIndex, size, alpha) {
+  if (!colorIndex) return;
+  context.save();
+  SKINS[currentSkin].draw(context, x, y, colorIndex, size, alpha);
+  context.restore();
 }
 
 function drawGrid() {
@@ -247,7 +372,23 @@ function applyTheme(isLight) {
 function toggleTheme() {
   const isLight = themeSwitch.checked;
   applyTheme(isLight);
-  localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
+  storageSet(THEME_KEY, isLight ? 'light' : 'dark');
+  draw();
+  if (next) drawNext();
+}
+
+function applySkin(skin) {
+  if (!SKINS[skin]) skin = 'retro';
+  currentSkin = skin;
+  document.body.classList.remove('skin-retro', 'skin-neon', 'skin-pastel', 'skin-pixel');
+  document.body.classList.add(`skin-${skin}`);
+  if (skinSelect) skinSelect.value = skin;
+  updateThemeColors();
+}
+
+function changeSkin() {
+  applySkin(skinSelect.value);
+  storageSet(SKIN_KEY, currentSkin);
   draw();
   if (next) drawNext();
 }
@@ -285,7 +426,8 @@ function loop(ts) {
 }
 
 function init() {
-  applyTheme(localStorage.getItem(THEME_KEY) === 'light');
+  applyTheme(storageGet(THEME_KEY) === 'light');
+  applySkin(storageGet(SKIN_KEY) || 'retro');
   board = createBoard();
   score = 0;
   lines = 0;
@@ -304,6 +446,9 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
+  // Ignorar teclas cuando el foco está en un control de formulario (p.ej.
+  // el selector de skin), para no mover/rotar la pieza al navegarlo.
+  if (e.target && /^(SELECT|INPUT|BUTTON)$/.test(e.target.tagName)) return;
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
@@ -330,5 +475,6 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 themeSwitch.addEventListener('change', toggleTheme);
+if (skinSelect) skinSelect.addEventListener('change', changeSkin);
 
 init();
