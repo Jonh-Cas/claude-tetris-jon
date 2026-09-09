@@ -48,6 +48,52 @@ body.light {
   --block-highlight: rgba(0, 0, 0, 0.12);
 }
 
+/* ---- Skins visuales ---- */
+/* Retro reproduce el aspecto original; se declara igual para dejar rastro
+   explícito y permitir ajustarlo sin tocar los valores por defecto de :root. */
+body.skin-retro {
+  --board-bg: #1a1a25;
+  --grid-line: #22222e;
+  --block-highlight: rgba(255, 255, 255, 0.12);
+}
+
+body.light.skin-retro {
+  --board-bg: #ffffff;
+  --grid-line: #dcdce4;
+  --block-highlight: rgba(0, 0, 0, 0.12);
+}
+
+/* Neon: fondo siempre negro, con o sin modo claro activo. */
+body.skin-neon {
+  --board-bg: #000000;
+  --grid-line: #003b3b;
+  --block-highlight: rgba(255, 255, 255, 0.25);
+}
+
+body.skin-pastel {
+  --board-bg: #2a2430;
+  --grid-line: #453d4d;
+  --block-highlight: rgba(255, 255, 255, 0.35);
+}
+
+body.light.skin-pastel {
+  --board-bg: #fffaf5;
+  --grid-line: #f0e0ea;
+  --block-highlight: rgba(255, 255, 255, 0.6);
+}
+
+body.skin-pixel {
+  --board-bg: #14141c;
+  --grid-line: #2c2c3a;
+  --block-highlight: rgba(255, 255, 255, 0.15);
+}
+
+body.light.skin-pixel {
+  --board-bg: #eeeeee;
+  --grid-line: #cfcfcf;
+  --block-highlight: rgba(0, 0, 0, 0.15);
+}
+
 body {
   background: var(--bg);
   color: var(--fg);
@@ -72,10 +118,28 @@ body {
   margin-bottom: 16px;
 }
 
-.theme-toggle {
+.topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.theme-toggle,
+.skin-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+#skin-select {
+  background: var(--kbd-bg);
+  color: var(--kbd-color);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .theme-label {
